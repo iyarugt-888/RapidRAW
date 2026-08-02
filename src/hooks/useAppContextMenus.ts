@@ -17,6 +17,7 @@ import {
   Redo,
   RefreshCw,
   RotateCcw,
+  Sparkles,
   Star,
   SquaresUnite,
   Palette,
@@ -420,6 +421,7 @@ export function useAppContextMenus(props: UseAppContextMenusProps) {
       const renameLabel = t('contextMenus.thumbnail.renameImage', { count: selectionCount });
       const cullLabel = t('contextMenus.thumbnail.cullImage', { count: selectionCount });
       const collageLabel = t('contextMenus.thumbnail.collage', { count: selectionCount });
+      const analyzeLabel = t('contextMenus.thumbnail.analyzeWithAi', { count: selectionCount });
       const stitchLabel = t('contextMenus.editor.stitchPanorama');
       const conversionLabel = t('contextMenus.thumbnail.convertNegative', { count: selectionCount });
       const denoiseLabel = t('contextMenus.thumbnail.denoise', { count: selectionCount });
@@ -637,6 +639,22 @@ export function useAppContextMenus(props: UseAppContextMenusProps) {
                   },
                 }),
               disabled: selectionCount < 2,
+            },
+            {
+              label: analyzeLabel,
+              icon: Sparkles,
+              onClick: () =>
+                setUI({
+                  aiAnalysisModalState: {
+                    isOpen: true,
+                    isProcessing: false,
+                    targetPaths: finalSelection,
+                    singleResult: null,
+                    batchResults: null,
+                    error: null,
+                  },
+                }),
+              disabled: selectionCount === 0,
             },
           ],
         },

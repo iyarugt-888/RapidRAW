@@ -5,6 +5,8 @@ import {
   Panel,
   UiVisibility,
   CullingSuggestions,
+  GeminiAnalysisResult,
+  GeminiBatchAnalysisItem,
   PanelRegion,
 } from '../components/ui/AppProperties';
 
@@ -85,6 +87,17 @@ export interface CullingModalState {
   pathsToCull: Array<string>;
 }
 
+export interface AiAnalysisModalState {
+  isOpen: boolean;
+  isProcessing: boolean;
+  targetPaths: Array<string>;
+  /** Single-image result when analysing one photo */
+  singleResult: GeminiAnalysisResult | null;
+  /** Batch results when analysing multiple photos */
+  batchResults: GeminiBatchAnalysisItem[] | null;
+  error: string | null;
+}
+
 interface UIState {
   activeView: string;
   isFullScreen: boolean;
@@ -140,6 +153,7 @@ interface UIState {
   denoiseModalState: DenoiseModalState;
   cullingModalState: CullingModalState;
   collageModalState: CollageModalState;
+  aiAnalysisModalState: AiAnalysisModalState;
 
   setUI: (updater: Partial<UIState> | ((state: UIState) => Partial<UIState>)) => void;
   setRightPanel: (panel: Panel | null) => void;
@@ -239,6 +253,14 @@ export const useUIStore = create<UIState>((set, get) => ({
   },
   cullingModalState: { isOpen: false, suggestions: null, progress: null, error: null, pathsToCull: [] },
   collageModalState: { isOpen: false, sourceImages: [] },
+  aiAnalysisModalState: {
+    isOpen: false,
+    isProcessing: false,
+    targetPaths: [],
+    singleResult: null,
+    batchResults: null,
+    error: null,
+  },
 
   setUI: (updater) => set((state) => (typeof updater === 'function' ? updater(state) : updater)),
 

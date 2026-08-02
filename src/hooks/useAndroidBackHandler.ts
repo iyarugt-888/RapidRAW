@@ -90,6 +90,19 @@ export function useAndroidBackHandler() {
         ui.setUI({ collageModalState: { isOpen: false, sourceImages: [] } });
         return;
       }
+      if (ui.aiAnalysisModalState.isOpen) {
+        ui.setUI({
+          aiAnalysisModalState: {
+            isOpen: false,
+            isProcessing: false,
+            targetPaths: [],
+            singleResult: null,
+            batchResults: null,
+            error: null,
+          },
+        });
+        return;
+      }
 
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true }));
     };

@@ -520,6 +520,7 @@ export default function SettingsPanel({
 
   const [aiProvider, setAiProvider] = useState(appSettings?.aiProvider || 'cpu');
   const [aiConnectorAddress, setAiConnectorAddress] = useState<string>(appSettings?.aiConnectorAddress || '');
+  const [geminiApiKey, setGeminiApiKey] = useState<string>(appSettings?.geminiApiKey || '');
   const [newShortcut, setNewShortcut] = useState('');
   const [newAiTag, setNewAiTag] = useState('');
 
@@ -636,6 +637,9 @@ export default function SettingsPanel({
     }
     if (appSettings?.aiProvider !== aiProvider) {
       setAiProvider(appSettings?.aiProvider || 'cpu');
+    }
+    if (appSettings?.geminiApiKey !== geminiApiKey) {
+      setGeminiApiKey(appSettings?.geminiApiKey || '');
     }
     setProcessingSettings({
       editorPreviewResolution: appSettings?.editorPreviewResolution || 1920,
@@ -2283,6 +2287,28 @@ export default function SettingsPanel({
                           </motion.div>
                         )}
                       </AnimatePresence>
+                    </div>
+
+                    {/* Gemini API Key — always visible regardless of AI provider */}
+                    <div className="mt-8 border-t border-border-color pt-6">
+                      <SettingItem
+                        label={t('settings.processing.ai.gemini.keyLabel')}
+                        description={t('settings.processing.ai.gemini.keyDesc')}
+                      >
+                        <Input
+                          className="grow"
+                          id="gemini-api-key"
+                          type="password"
+                          placeholder={t('settings.processing.ai.gemini.keyPlaceholder')}
+                          value={geminiApiKey}
+                          onChange={(e: any) => setGeminiApiKey(e.target.value)}
+                          onKeyDown={(e: any) => e.stopPropagation()}
+                          onBlur={() =>
+                            onSettingsChange({ ...appSettings, geminiApiKey: geminiApiKey })
+                          }
+                          bgClassName="bg-bg-primary"
+                        />
+                      </SettingItem>
                     </div>
                   </div>
 
