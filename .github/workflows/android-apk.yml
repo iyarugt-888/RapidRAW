@@ -1,0 +1,16 @@
+name: Android APK Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android-apk:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: ubuntu-latest
+      target: aarch64-linux-android
+      build-args: --debug --target aarch64
+      asset-prefix: android
+      mobile: android
