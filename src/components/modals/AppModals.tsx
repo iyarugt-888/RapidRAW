@@ -19,6 +19,7 @@ import ConfirmModal from './ConfirmModal';
 import ImportSettingsModal from './ImportSettingsModal';
 import CullingModal from './CullingModal';
 import CollageModal from './CollageModal';
+import AiAnalysisModal from './AiAnalysisModal';
 import { AppSettings, Invokes, AlbumItem, Album, AlbumGroup } from '../ui/AppProperties';
 import { CopyPasteSettings } from '../../utils/adjustments';
 
@@ -73,6 +74,7 @@ export default function AppModals(props: AppModalsProps) {
     denoiseModalState,
     cullingModalState,
     collageModalState,
+    aiAnalysisModalState,
     setUI,
   } = useUIStore(
     useShallow((state) => ({
@@ -95,6 +97,7 @@ export default function AppModals(props: AppModalsProps) {
       denoiseModalState: state.denoiseModalState,
       cullingModalState: state.cullingModalState,
       collageModalState: state.collageModalState,
+      aiAnalysisModalState: state.aiAnalysisModalState,
       setUI: state.setUI,
     })),
   );
@@ -321,6 +324,23 @@ export default function AppModals(props: AppModalsProps) {
         onClose={() => setUI({ collageModalState: { isOpen: false, sourceImages: [] } })}
         onSave={props.handleSaveCollage}
         sourceImages={collageModalState.sourceImages}
+        thumbnails={thumbnails}
+      />
+      <AiAnalysisModal
+        isOpen={aiAnalysisModalState.isOpen}
+        onClose={() =>
+          setUI({
+            aiAnalysisModalState: {
+              isOpen: false,
+              isProcessing: false,
+              targetPaths: [],
+              singleResult: null,
+              batchResults: null,
+              error: null,
+            },
+          })
+        }
+        targetPaths={aiAnalysisModalState.targetPaths}
         thumbnails={thumbnails}
       />
     </>

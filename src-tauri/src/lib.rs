@@ -19,6 +19,7 @@ mod exif_processing;
 mod export_processing;
 mod file_management;
 mod formats;
+mod gemini_analysis;
 mod gpu_processing;
 mod hdr_deghosting;
 mod image_loader;
@@ -2384,6 +2385,8 @@ pub fn run() {
             lens_correction::get_lens_distortion_params,
             negative_conversion::preview_negative_conversion,
             negative_conversion::convert_negatives,
+            gemini_analysis::analyze_image_with_gemini,
+            gemini_analysis::analyze_images_batch_with_gemini,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

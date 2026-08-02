@@ -266,7 +266,9 @@
       "resetAdjustments_one": "Reset Adjustments",
       "resetAdjustments_other": "Reset Adjustments on {{count}} Images",
       "showExplorer": "Show in File Explorer",
-      "virtualCopy": "Virtual Copy"
+      "virtualCopy": "Virtual Copy",
+      "analyzeWithAi_one": "Analyze with AI",
+      "analyzeWithAi_other": "Analyze {{count}} Images with AI"
     },
     "toasts": {
       "couldNotShowExplorer": "Could not show file in explorer: {{err}}",
@@ -1383,6 +1385,26 @@
       "yAxis": "Y Axis",
       "zoomInTooltip": "Zoom In",
       "zoomOutTooltip": "Zoom Out"
+    },
+    "aiAnalysis": {
+      "title": "AI Auto-Analysis",
+      "startSingle": "Analyze this image",
+      "startBatch": "Analyze {{count}} images",
+      "startDesc": "Send this image to Gemini for quality scores, crop suggestions, and focus point analysis.",
+      "analyzing": "Analyzing...",
+      "analyze": "Analyze",
+      "reanalyze": "Re-analyze",
+      "retry": "Retry",
+      "close": "Close",
+      "scoreQuality": "Quality",
+      "scoreAesthetic": "Aesthetic",
+      "scoreClarity": "Clarity",
+      "scoreSharpness": "Sharpness",
+      "cropLabel": "Suggested Crop",
+      "bucketHigh": "High Rating (8-10)",
+      "bucketMedium": "Medium Rating (5-7)",
+      "bucketLow": "Low Rating (0-4)",
+      "bucketUnrated": "Unrated / Failed"
     }
   },
   "settings": {
@@ -1610,7 +1632,12 @@
           "cloud": "Cloud",
           "cpu": "CPU"
         },
-        "title": "Generative AI"
+        "title": "Generative AI",
+        "gemini": {
+          "keyLabel": "Gemini API Key",
+          "keyDesc": "Your Google Gemini API key, used for AI Auto-Analysis (image scoring, crop suggestions, focus points). Get a free key at aistudio.google.com.",
+          "keyPlaceholder": "AIza..."
+        }
       },
       "alwaysDecodeRaw": "Always Decode RAW",
       "alwaysDecodeRawDesc": "Force full RAW decoding for thumbnails instead of using embedded JPEG previews. Enable this if your thumbnails look different in color or contrast compared to the opened image.",

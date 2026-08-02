@@ -108,6 +108,8 @@ export enum Invokes {
   SaveAlbums = 'save_albums',
   AddToAlbum = 'add_to_album',
   GetAlbumImages = 'get_album_images',
+  AnalyzeImageWithGemini = 'analyze_image_with_gemini',
+  AnalyzeImagesBatchWithGemini = 'analyze_images_batch_with_gemini',
 }
 
 export enum ExifOverlay {
@@ -179,6 +181,7 @@ export type GroupingMode = 'off' | GroupPreference;
 export interface AppSettings {
   aiConnectorAddress?: string;
   aiProvider?: string;
+  geminiApiKey?: string;
   decorations?: any;
   editorPreviewResolution?: number;
   enableZoomHifi?: boolean;
@@ -404,6 +407,38 @@ export interface CullingSuggestions {
   similarGroups: CullGroup[];
   blurryImages: ImageAnalysisResult[];
   failedPaths: string[];
+}
+
+export interface GeminiCropSuggestion {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface GeminiFocusPoint {
+  x: number;
+  y: number;
+  intensity: number;
+  comment: string;
+  type: 'good' | 'bad' | 'neutral';
+}
+
+export interface GeminiAnalysisResult {
+  quality: number;
+  aestheticAppeal: number;
+  subjectClarity: number;
+  technicalSharpness: number;
+  albumName: string;
+  summary: string;
+  cropSuggestion: GeminiCropSuggestion;
+  focusPoints: GeminiFocusPoint[];
+}
+
+export interface GeminiBatchAnalysisItem {
+  path: string;
+  result: GeminiAnalysisResult | null;
+  error: string | null;
 }
 
 export interface KeybindHandler {

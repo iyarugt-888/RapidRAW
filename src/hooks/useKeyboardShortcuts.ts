@@ -589,6 +589,7 @@ export const useKeyboardShortcuts = ({
         state.ui.panoramaModalState.isOpen ||
         state.ui.cullingModalState.isOpen ||
         state.ui.collageModalState.isOpen ||
+        state.ui.aiAnalysisModalState.isOpen ||
         state.ui.denoiseModalState.isOpen ||
         state.ui.negativeModalState.isOpen;
 
