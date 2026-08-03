@@ -214,6 +214,7 @@ pub async fn analyze_image_with_gemini(
     let settings = load_settings(app_handle.clone())?;
     let api_key = settings
         .gemini_api_key
+        .clone()
         .filter(|k| !k.is_empty())
         .ok_or_else(|| {
             "Gemini API key is not configured. Please add it in Settings > AI.".to_string()
@@ -239,6 +240,7 @@ pub async fn analyze_images_batch_with_gemini(
     let settings = load_settings(app_handle.clone())?;
     let api_key = settings
         .gemini_api_key
+        .clone()
         .filter(|k| !k.is_empty())
         .ok_or_else(|| {
             "Gemini API key is not configured. Please add it in Settings > AI.".to_string()
@@ -298,4 +300,3 @@ pub async fn analyze_images_batch_with_gemini(
 
     Ok(results)
 }
-
