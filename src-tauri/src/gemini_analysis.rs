@@ -11,7 +11,6 @@ use tauri::AppHandle;
 use crate::app_settings::load_settings;
 use crate::app_state::AppState;
 use crate::file_management::read_file_mapped;
-use crate::formats::is_raw_file;
 
 const MAX_DIMENSION: u32 = 1024;
 const GEMINI_API_BASE: &str =
@@ -66,15 +65,18 @@ pub struct BatchAnalysisItem {
 }
 
 fn load_image_for_analysis(path: &str, settings: &crate::app_settings::AppSettings) -> Result<DynamicImage, String> {
-    let mapped = read_file_mapped(Path::new(path)).map_err(|e| e.to_string())?;
-    let bytes: &[u8] = &mapped;
+    // Try memory-mapped read first; fall back to a standard read when the file
+    // is temporarily locked by another part of the pipeline (e.g. thumbnail
+    // generation or concurrent image processing).
+    let bytes: Vec<u8> = match read_file_mapped(Path::new(path)) {
+        Ok(mapped) => mapped.to_vec(),
+        Err(_) => std::fs::read(path).map_err(|e| e.to_string())?,
+    };
 
-    if is_raw_file(path) {
-        crate::raw_processing::develop_raw_image(bytes, true, 2.5, "auto".to_string(), None)
-            .map_err(|e| e.to_string())
-    } else {
-        image::load_from_memory(bytes).map_err(|e| e.to_string())
-    }
+    // Use the shared image-loading pipeline so that unsupported RAW formats
+    // (e.g. CR3) automatically fall back to the embedded JPEG preview.
+    crate::image_loader::load_base_image_from_bytes(&bytes, path, true, settings, None)
+        .map_err(|e| e.to_string())
 }
 
 fn resize_image_for_api(img: &DynamicImage) -> DynamicImage {
