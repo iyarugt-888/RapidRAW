@@ -8,6 +8,7 @@ import { Invokes, ImageFile, AlbumItem, Album, AlbumGroup } from '../components/
 import { globalImageCache } from '../utils/ImageLRUCache';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { computeSortedLibrary } from './useSortedLibrary';
+import { runAutomationForRatingSet, runAutomationForColorLabelSet } from './useAutomation';
 
 export function useLibraryActions(handleImageSelect?: (path: string, openInEditor?: boolean) => void) {
   const handleRate = useCallback((newRating: number, paths?: string[]) => {
@@ -29,10 +30,14 @@ export function useLibraryActions(handleImageSelect?: (path: string, openInEdito
       return { imageRatings: newRatings };
     });
 
-    invoke(Invokes.SetRatingForPaths, { paths: pathsToRate, rating: finalRating }).catch((err) => {
-      console.error(err);
-      toast.error(`Failed to apply rating: ${err}`);
-    });
+    invoke(Invokes.SetRatingForPaths, { paths: pathsToRate, rating: finalRating })
+      .then(() => {
+        if (finalRating > 0) runAutomationForRatingSet(pathsToRate, finalRating);
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error(`Failed to apply rating: ${err}`);
+      });
   }, []);
 
   const handleSetColorLabel = useCallback(async (color: string | null, paths?: string[]) => {
@@ -54,6 +59,7 @@ export function useLibraryActions(handleImageSelect?: (path: string, openInEdito
 
     try {
       await invoke(Invokes.SetColorLabelForPaths, { paths: pathsToUpdate, color: finalColor });
+      if (finalColor) runAutomationForColorLabelSet(pathsToUpdate, finalColor);
       setLibrary((state) => ({
         imageList: state.imageList.map((image: ImageFile) => {
           if (pathsToUpdate.includes(image.path)) {

@@ -11,6 +11,7 @@ import {
 import Button from '../ui/Button';
 import Text from '../ui/Text';
 import { TextColors, TextVariants } from '../../types/typography';
+import { runAutomationForAiScore } from '../../hooks/useAutomation';
 
 interface AiAnalysisModalProps {
   isOpen: boolean;
@@ -412,6 +413,7 @@ export default function AiAnalysisModal({
           path: firstPath,
         });
         setSingleResult(result);
+        runAutomationForAiScore(firstPath, result);
       } else {
         const results = await invoke<GeminiBatchAnalysisItem[]>(
           Invokes.AnalyzeImagesBatchWithGemini,

@@ -14,7 +14,7 @@ use crate::file_management::read_file_mapped;
 
 const MAX_DIMENSION: u32 = 1024;
 const GEMINI_API_BASE: &str =
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 const ANALYSIS_PROMPT: &str = concat!(
     "Rate this image on a scale of 0 to 10 for: Quality, Aesthetic Appeal, Subject Clarity, and Technical Sharpness. ",

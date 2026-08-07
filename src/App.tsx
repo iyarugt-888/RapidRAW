@@ -788,6 +788,7 @@ function App() {
                       handleZoomChange={handleZoomChange}
                       handleRightPanelSelect={handleRightPanelSelect}
                       requestThumbnails={requestThumbnails}
+                      renderPanel={(isAndroid || isCompactPortrait) ? renderAppPanel : undefined}
                     />
                   )}
                 </div>
@@ -838,7 +839,7 @@ function App() {
                   </div>
                 )}
               </div>
-              {!isAndroid && hasMainContent && (
+              {!isAndroid && !isCompactPortrait && hasMainContent && (
                 <SidePanelArea
                   side="right"
                   width={rightPanelWidth}

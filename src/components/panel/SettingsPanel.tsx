@@ -18,10 +18,15 @@ import {
   Image as ImageIcon,
   Mouse,
   Touchpad,
+  Zap,
+  ChevronDown,
+  ChevronRight,
+  Check,
 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { relaunch } from '@tauri-apps/plugin-process';
+import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import clsx from 'clsx';
 import { Show, SignIn, useUser, useAuth, useClerk } from '@clerk/react';
@@ -33,7 +38,7 @@ import Input from '../ui/Input';
 import Slider from '../ui/Slider';
 import { ThemeProps, THEMES, DEFAULT_THEME_ID } from '../../utils/themes';
 import { useTranslation } from 'react-i18next';
-import { Invokes } from '../ui/AppProperties';
+import { Invokes, AutomationRule, AutomationTrigger, AutomationAction } from '../ui/AppProperties';
 import {
   formatKeyCode,
   KeybindDefinition,
@@ -489,6 +494,420 @@ const PreviewModeSwitch = ({ mode, onModeChange }: PreviewModeSwitchProps) => {
   );
 };
 
+// ── Automation Settings Component ────────────────────────────────────────────
+
+const TRIGGER_TYPE_OPTIONS = [
+  { value: 'rating_set', label: 'Rating set to' },
+  { value: 'color_label_set', label: 'Color label set to' },
+  { value: 'tag_added', label: 'Tag added' },
+  { value: 'ai_score_above', label: 'AI score above' },
+] as const;
+
+const ACTION_TYPE_OPTIONS = [
+  { value: 'add_tag', label: 'Add tag' },
+  { value: 'remove_tag', label: 'Remove tag' },
+  { value: 'set_color_label', label: 'Set color label' },
+  { value: 'set_rating', label: 'Set rating' },
+  { value: 'apply_preset', label: 'Apply preset' },
+  { value: 'add_to_album', label: 'Add to album' },
+] as const;
+
+const AI_METRIC_OPTIONS = [
+  { value: 'quality', label: 'Quality' },
+  { value: 'aestheticAppeal', label: 'Aesthetic Appeal' },
+  { value: 'subjectClarity', label: 'Subject Clarity' },
+  { value: 'technicalSharpness', label: 'Technical Sharpness' },
+] as const;
+
+const COLOR_OPTIONS = [
+  { value: 'red', label: 'Red' },
+  { value: 'orange', label: 'Orange' },
+  { value: 'yellow', label: 'Yellow' },
+  { value: 'green', label: 'Green' },
+  { value: 'blue', label: 'Blue' },
+  { value: 'purple', label: 'Purple' },
+] as const;
+
+function describeTrigger(trigger: AutomationTrigger): string {
+  switch (trigger.type) {
+    case 'rating_set':
+      return `Rating = ${trigger.value}★`;
+    case 'color_label_set':
+      return `Color label = ${trigger.value}`;
+    case 'tag_added':
+      return `Tag added: "${trigger.tag}"`;
+    case 'ai_score_above': {
+      const metricLabel = AI_METRIC_OPTIONS.find((m) => m.value === trigger.metric)?.label ?? trigger.metric;
+      return `AI ${metricLabel} > ${trigger.threshold}`;
+    }
+  }
+}
+
+function describeAction(action: AutomationAction): string {
+  switch (action.type) {
+    case 'add_tag':
+      return `Add tag "${action.tag}"`;
+    case 'remove_tag':
+      return `Remove tag "${action.tag}"`;
+    case 'set_color_label':
+      return `Set color: ${action.value}`;
+    case 'set_rating':
+      return `Set rating ${action.value}★`;
+    case 'apply_preset':
+      return `Apply preset "${action.presetName}"`;
+    case 'add_to_album':
+      return `Add to album "${action.albumName}"`;
+  }
+}
+
+function makeTrigger(type: string): AutomationTrigger {
+  switch (type) {
+    case 'color_label_set':
+      return { type: 'color_label_set', value: 'red' };
+    case 'tag_added':
+      return { type: 'tag_added', tag: '' };
+    case 'ai_score_above':
+      return { type: 'ai_score_above', metric: 'quality', threshold: 7 };
+    default:
+      return { type: 'rating_set', value: 5 };
+  }
+}
+
+function makeAction(type: string): AutomationAction {
+  switch (type) {
+    case 'remove_tag':
+      return { type: 'remove_tag', tag: '' };
+    case 'set_color_label':
+      return { type: 'set_color_label', value: 'red' };
+    case 'set_rating':
+      return { type: 'set_rating', value: 5 };
+    case 'apply_preset':
+      return { type: 'apply_preset', presetName: '' };
+    case 'add_to_album':
+      return { type: 'add_to_album', albumName: '' };
+    default:
+      return { type: 'add_tag', tag: '' };
+  }
+}
+
+interface RuleFormState {
+  name: string;
+  trigger: AutomationTrigger;
+  action: AutomationAction;
+}
+
+function RuleForm({
+  initial,
+  onSave,
+  onCancel,
+}: {
+  initial?: RuleFormState;
+  onSave(state: RuleFormState): void;
+  onCancel(): void;
+}) {
+  const [name, setName] = useState(initial?.name ?? '');
+  const [trigger, setTrigger] = useState<AutomationTrigger>(initial?.trigger ?? { type: 'rating_set', value: 5 });
+  const [action, setAction] = useState<AutomationAction>(initial?.action ?? { type: 'add_tag', tag: '' });
+
+  const handleTriggerTypeChange = (type: string) => {
+    setTrigger(makeTrigger(type));
+  };
+
+  const handleActionTypeChange = (type: string) => {
+    setAction(makeAction(type));
+  };
+
+  return (
+    <div className="space-y-4 p-4 bg-bg-primary rounded-lg border border-border-color">
+      <div>
+        <label className="text-xs text-text-secondary block mb-1">Rule name</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="My rule"
+          className="w-full bg-bg-secondary border border-border-color rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+        />
+      </div>
+
+      {/* Trigger */}
+      <div>
+        <label className="text-xs text-text-secondary block mb-1">When (trigger)</label>
+        <select
+          value={trigger.type}
+          onChange={(e) => handleTriggerTypeChange(e.target.value)}
+          className="w-full bg-bg-secondary border border-border-color rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent mb-2"
+        >
+          {TRIGGER_TYPE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+
+        {trigger.type === 'rating_set' && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-text-secondary">Rating =</span>
+            <select
+              value={trigger.value}
+              onChange={(e) => setTrigger({ type: 'rating_set', value: Number(e.target.value) })}
+              className="bg-bg-secondary border border-border-color rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent"
+            >
+              {[1, 2, 3, 4, 5].map((v) => <option key={v} value={v}>{v} ★</option>)}
+            </select>
+          </div>
+        )}
+        {trigger.type === 'color_label_set' && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-text-secondary">Color =</span>
+            <select
+              value={trigger.value}
+              onChange={(e) => setTrigger({ type: 'color_label_set', value: e.target.value })}
+              className="bg-bg-secondary border border-border-color rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent"
+            >
+              {COLOR_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </div>
+        )}
+        {trigger.type === 'tag_added' && (
+          <input
+            type="text"
+            value={trigger.tag}
+            onChange={(e) => setTrigger({ type: 'tag_added', tag: e.target.value })}
+            placeholder="Tag name"
+            className="w-full bg-bg-secondary border border-border-color rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+          />
+        )}
+        {trigger.type === 'ai_score_above' && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              value={trigger.metric}
+              onChange={(e) =>
+                setTrigger({ type: 'ai_score_above', metric: e.target.value as any, threshold: trigger.threshold })
+              }
+              className="bg-bg-secondary border border-border-color rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent"
+            >
+              {AI_METRIC_OPTIONS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </select>
+            <span className="text-sm text-text-secondary">&gt;</span>
+            <select
+              value={trigger.threshold}
+              onChange={(e) =>
+                setTrigger({ type: 'ai_score_above', metric: trigger.metric, threshold: Number(e.target.value) })
+              }
+              className="bg-bg-secondary border border-border-color rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent"
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* Action */}
+      <div>
+        <label className="text-xs text-text-secondary block mb-1">Then do (action)</label>
+        <select
+          value={action.type}
+          onChange={(e) => handleActionTypeChange(e.target.value)}
+          className="w-full bg-bg-secondary border border-border-color rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent mb-2"
+        >
+          {ACTION_TYPE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+
+        {(action.type === 'add_tag' || action.type === 'remove_tag') && (
+          <input
+            type="text"
+            value={action.tag}
+            onChange={(e) => setAction({ type: action.type, tag: e.target.value })}
+            placeholder="Tag name"
+            className="w-full bg-bg-secondary border border-border-color rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+          />
+        )}
+        {action.type === 'set_color_label' && (
+          <select
+            value={action.value}
+            onChange={(e) => setAction({ type: 'set_color_label', value: e.target.value })}
+            className="w-full bg-bg-secondary border border-border-color rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent"
+          >
+            {COLOR_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        )}
+        {action.type === 'set_rating' && (
+          <select
+            value={action.value}
+            onChange={(e) => setAction({ type: 'set_rating', value: Number(e.target.value) })}
+            className="w-full bg-bg-secondary border border-border-color rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent"
+          >
+            {[1, 2, 3, 4, 5].map((v) => <option key={v} value={v}>{v} ★</option>)}
+          </select>
+        )}
+        {action.type === 'apply_preset' && (
+          <input
+            type="text"
+            value={action.presetName}
+            onChange={(e) => setAction({ type: 'apply_preset', presetName: e.target.value })}
+            placeholder="Preset name"
+            className="w-full bg-bg-secondary border border-border-color rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+          />
+        )}
+        {action.type === 'add_to_album' && (
+          <input
+            type="text"
+            value={action.albumName}
+            onChange={(e) => setAction({ type: 'add_to_album', albumName: e.target.value })}
+            placeholder="Album name"
+            className="w-full bg-bg-secondary border border-border-color rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+          />
+        )}
+      </div>
+
+      <div className="flex items-center justify-end gap-2 pt-2">
+        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+        <Button
+          onClick={() => onSave({ name: name.trim() || 'Untitled rule', trigger, action })}
+          className="flex items-center gap-1.5"
+        >
+          <Check size={14} />
+          Save rule
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+interface AutomationSettingsProps {
+  rules: AutomationRule[];
+  onRulesChange(rules: AutomationRule[]): void;
+}
+
+function AutomationSettings({ rules, onRulesChange }: AutomationSettingsProps) {
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleAdd = (state: RuleFormState) => {
+    const newRule: AutomationRule = { id: uuidv4(), enabled: true, ...state };
+    onRulesChange([...rules, newRule]);
+    setIsAdding(false);
+  };
+
+  const handleEdit = (id: string, state: RuleFormState) => {
+    onRulesChange(rules.map((r) => (r.id === id ? { ...r, ...state } : r)));
+    setEditingId(null);
+  };
+
+  const handleToggle = (id: string) => {
+    onRulesChange(rules.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r)));
+  };
+
+  const handleDelete = (id: string) => {
+    onRulesChange(rules.filter((r) => r.id !== id));
+  };
+
+  return (
+    <motion.div
+      key="automation"
+      initial={{ opacity: 0, x: 10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -10 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-6"
+    >
+      <div className="p-6 bg-surface rounded-xl shadow-md">
+        <div className="flex items-center justify-between mb-2">
+          <Text variant={TextVariants.title} color={TextColors.accent}>
+            Automation Rules
+          </Text>
+          <Button
+            onClick={() => { setIsAdding(true); setEditingId(null); }}
+            className="flex items-center gap-1.5"
+            disabled={isAdding}
+          >
+            <Plus size={14} />
+            Add rule
+          </Button>
+        </div>
+        <Text variant={TextVariants.small} color={TextColors.secondary} className="mb-6">
+          Create if-this-then-that style rules that run automatically when editing photos.
+        </Text>
+
+        {isAdding && (
+          <div className="mb-4">
+            <RuleForm onSave={handleAdd} onCancel={() => setIsAdding(false)} />
+          </div>
+        )}
+
+        {rules.length === 0 && !isAdding && (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <Zap size={32} className="text-text-tertiary opacity-50" />
+            <Text variant={TextVariants.small} color={TextColors.secondary}>
+              No automation rules yet. Add one to get started.
+            </Text>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {rules.map((rule) => (
+            <div key={rule.id}>
+              {editingId === rule.id ? (
+                <RuleForm
+                  initial={{ name: rule.name, trigger: rule.trigger, action: rule.action }}
+                  onSave={(state) => handleEdit(rule.id, state)}
+                  onCancel={() => setEditingId(null)}
+                />
+              ) : (
+                <div
+                  className={clsx(
+                    'flex items-start gap-3 p-3 rounded-lg border transition-colors',
+                    rule.enabled ? 'border-border-color bg-bg-primary' : 'border-surface bg-bg-secondary opacity-60',
+                  )}
+                >
+                  <button
+                    onClick={() => handleToggle(rule.id)}
+                    className={clsx(
+                      'mt-0.5 shrink-0 w-4 h-4 rounded border transition-colors flex items-center justify-center',
+                      rule.enabled
+                        ? 'bg-accent border-accent text-button-text'
+                        : 'border-border-color',
+                    )}
+                  >
+                    {rule.enabled && <Check size={10} />}
+                  </button>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-text-primary truncate">{rule.name}</p>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      <span className="text-accent">When</span> {describeTrigger(rule.trigger)}
+                      {' → '}
+                      <span className="text-accent">Then</span> {describeAction(rule.action)}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => { setEditingId(rule.id); setIsAdding(false); }}
+                      className="p-1 text-text-tertiary hover:text-text-primary rounded hover:bg-surface transition-colors"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(rule.id)}
+                      className="p-1 text-text-tertiary hover:text-red-400 rounded hover:bg-surface transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function SettingsPanel({
   appSettings,
   onBack,
@@ -557,6 +976,7 @@ export default function SettingsPanel({
     () => [
       { id: 'general', label: t('settings.categories.general'), icon: SlidersHorizontal },
       { id: 'processing', label: t('settings.categories.processing'), icon: Cpu },
+      { id: 'automation', label: t('settings.categories.automation'), icon: Zap },
       { id: 'shortcuts', label: t('settings.categories.shortcuts'), icon: Keyboard },
     ],
     [t],
@@ -2377,6 +2797,13 @@ export default function SettingsPanel({
                     </div>
                   </div>
                 </motion.div>
+              )}
+
+              {activeCategory === 'automation' && (
+                <AutomationSettings
+                  rules={appSettings?.automationRules ?? []}
+                  onRulesChange={(rules) => onSettingsChange({ ...appSettings, automationRules: rules })}
+                />
               )}
 
               {activeCategory === 'shortcuts' && (
