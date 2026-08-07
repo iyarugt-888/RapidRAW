@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Invokes } from '../components/ui/AppProperties';
 import Text from '../components/ui/Text';
 import { TextVariants } from '../types/typography';
+import { runAutomationForTagAdded } from '../hooks/useAutomation';
 
 interface TaggingSubMenuProps {
   paths: string[];
@@ -48,6 +49,7 @@ export default function TaggingSubMenu({
       try {
         const prefixedTag = `${USER_TAG_PREFIX}${newTagValue}`;
         await invoke(Invokes.AddTagForPaths, { paths, tag: prefixedTag });
+        runAutomationForTagAdded(paths, newTagValue);
         const newTags = [...tags, { tag: newTagValue, isUser: true }].sort((a, b) => a.tag.localeCompare(b.tag));
         setTags(newTags);
         onTagsChanged(paths, newTags);

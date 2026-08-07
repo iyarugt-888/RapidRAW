@@ -1419,6 +1419,7 @@
     "categories": {
       "general": "General",
       "processing": "Processing",
+      "automation": "Automation",
       "shortcuts": "Controls"
     },
     "controls": {
@@ -1785,6 +1786,10 @@
     }
   },
   "ui": {
+    "panel": {
+      "expand": "Expand panel",
+      "collapse": "Collapse panel"
+    },
     "bottomBar": {
       "imagesSelected": "{{current}} of {{total}} images selected",
       "tooltips": {

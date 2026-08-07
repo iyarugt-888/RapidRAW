@@ -178,6 +178,46 @@ export interface WorkspaceState {
 export type GroupPreference = 'jpeg' | 'raw';
 export type GroupingMode = 'off' | GroupPreference;
 
+// ── Automation / IFTTT-style rules ──────────────────────────────────────────
+
+export type AutomationTriggerType =
+  | 'rating_set'
+  | 'color_label_set'
+  | 'tag_added'
+  | 'ai_score_above';
+
+export type AutomationTrigger =
+  | { type: 'rating_set'; value: number }
+  | { type: 'color_label_set'; value: string }
+  | { type: 'tag_added'; tag: string }
+  | { type: 'ai_score_above'; metric: 'quality' | 'aestheticAppeal' | 'subjectClarity' | 'technicalSharpness'; threshold: number };
+
+export type AutomationActionType =
+  | 'add_tag'
+  | 'remove_tag'
+  | 'set_color_label'
+  | 'set_rating'
+  | 'apply_preset'
+  | 'add_to_album';
+
+export type AutomationAction =
+  | { type: 'add_tag'; tag: string }
+  | { type: 'remove_tag'; tag: string }
+  | { type: 'set_color_label'; value: string }
+  | { type: 'set_rating'; value: number }
+  | { type: 'apply_preset'; presetName: string }
+  | { type: 'add_to_album'; albumName: string };
+
+export interface AutomationRule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  trigger: AutomationTrigger;
+  action: AutomationAction;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+
 export interface AppSettings {
   aiConnectorAddress?: string;
   aiProvider?: string;
@@ -240,6 +280,7 @@ export interface AppSettings {
   groupPreferredType?: GroupPreference; // legacy
   alwaysDecodeRawThumbnails?: boolean;
   workspace?: WorkspaceState;
+  automationRules?: AutomationRule[];
 }
 
 export interface BrushSettings {
