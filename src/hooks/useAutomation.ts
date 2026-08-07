@@ -37,9 +37,8 @@ async function executeAction(action: AutomationAction, paths: string[]): Promise
       const { selectedImage, adjustments } = useEditorStore.getState();
       if (!selectedImage || !paths.includes(selectedImage.path)) break;
 
-      const settings = useSettingsStore.getState().appSettings;
-      const presets = (settings as any)?.__presetsCache ?? [];
-      const preset = presets.find((p: any) => p.name === action.presetName);
+      const allPresets: any[] = await invoke(Invokes.LoadPresets);
+      const preset = allPresets.find((p: any) => p.name === action.presetName);
       if (!preset) {
         toast.warn(`Automation: preset "${action.presetName}" not found`);
         break;
